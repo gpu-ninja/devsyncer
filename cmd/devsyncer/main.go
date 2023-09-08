@@ -194,7 +194,7 @@ func syncDeviceNodes(logger *zap.Logger, source, destination string, filters []s
 
 func shouldSync(relPath string, filters []string) bool {
 	for _, filter := range filters {
-		if match, _ := filepath.Match(filter, filepath.Base(relPath)); match {
+		if match, _ := filepath.Match(filter, relPath); match {
 			return true
 		}
 	}
