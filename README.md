@@ -1,2 +1,3 @@
 # devsyncer
-A little tool for syncing device nodes within a Docker container.
+
+Synchronize device nodes between two directories with optional glob-based filters.
