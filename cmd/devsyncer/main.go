@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"syscall"
 
 	"github.com/fsnotify/fsnotify"
 	zaplogfmt "github.com/jsternberg/zap-logfmt"
+	sysctl "github.com/lorenzosaino/go-sysctl"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -75,6 +77,10 @@ func main() {
 }
 
 func runSync(logger *zap.Logger, source, destination string, filters []string) error {
+	if err := setupSysctls(); err != nil {
+		return fmt.Errorf("error setting up sysctls: %w", err)
+	}
+
 	if err := syncDeviceNodes(logger, source, destination, filters); err != nil {
 		return fmt.Errorf("error during initial sync: %w", err)
 	}
@@ -210,4 +216,40 @@ func createDeviceNode(path string, mode uint32, dev uint64) error {
 	}
 
 	return unix.Mknod(path, mode, int(dev))
+}
+
+func setupSysctls() error {
+	maxUserWatchesStr, err := sysctl.Get("fs.inotify.max_user_watches")
+	if err != nil {
+		return fmt.Errorf("error getting max_user_watches: %w", err)
+	}
+
+	maxUserWatches, err := strconv.Atoi(maxUserWatchesStr)
+	if err != nil {
+		return fmt.Errorf("error parsing max_user_watches: %w", err)
+	}
+
+	if maxUserWatches < 124983 {
+		if err := sysctl.Set("fs.inotify.max_user_watches", "124983"); err != nil {
+			return fmt.Errorf("error setting max_user_watches: %w", err)
+		}
+	}
+
+	maxUserInstancesStr, err := sysctl.Get("fs.inotify.max_user_instances")
+	if err != nil {
+		return fmt.Errorf("error getting max_user_instances: %w", err)
+	}
+
+	maxUserInstances, err := strconv.Atoi(maxUserInstancesStr)
+	if err != nil {
+		return fmt.Errorf("error parsing max_user_instances: %w", err)
+	}
+
+	if maxUserInstances < 128 {
+		if err := sysctl.Set("fs.inotify.max_user_instances", "128"); err != nil {
+			return fmt.Errorf("error setting max_user_instances: %w", err)
+		}
+	}
+
+	return nil
 }
