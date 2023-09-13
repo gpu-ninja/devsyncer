@@ -11,8 +11,6 @@ docker:
   FROM debian:bookworm-slim
   COPY LICENSE /usr/local/share/devsyncer/
   COPY (+devsyncer/devsyncer --GOARCH=${TARGETARCH}) /usr/local/bin/
-  EXPOSE 8080/tcp
-  EXPOSE 8443/tcp
   ENTRYPOINT ["/usr/local/bin/devsyncer"]
   SAVE IMAGE --push ghcr.io/gpu-ninja/devsyncer:${VERSION}
   SAVE IMAGE --push ghcr.io/gpu-ninja/devsyncer:latest
